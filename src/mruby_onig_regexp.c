@@ -62,7 +62,8 @@ static struct mrb_data_type mrb_onig_region_type = {
 static mrb_value
 onig_regexp_initialize(mrb_state *mrb, mrb_value self) {
   mrb_value str, flag = mrb_nil_value();
-  mrb_get_args(mrb, "S|o", &str, &flag);
+  mrb_value code = mrb_nil_value();
+  mrb_get_args(mrb, "S|oo", &str, &flag, &code);
 
   int cflag = 0;
   OnigSyntaxType* syntax = ONIG_SYNTAX_RUBY;
@@ -83,10 +84,25 @@ onig_regexp_initialize(mrb_state *mrb, mrb_value self) {
     mrb_raisef(mrb, E_ARGUMENT_ERROR, "unknown regexp flag: %S", flag);
   }
 
+  OnigEncoding enc = ONIG_ENCODING_UTF8;
+  if(mrb_nil_p(code)) {
+  } else if (mrb_string_p(code)) {
+    char const* str_code = mrb_string_value_ptr(mrb, code);
+    if(strchr(str_code, 'n') || strchr(str_code, 'N')) {
+      enc = ONIG_ENCODING_ASCII;
+    } else if(strchr(str_code, 'u') || strchr(str_code, 'U')) {
+      enc = ONIG_ENCODING_UTF8;
+    } else {
+      mrb_warn(mrb, "encoding option is ignored - %S", code);
+    }
+  } else {
+    mrb_raisef(mrb, E_ARGUMENT_ERROR, "unknown regexp code: %S", code);
+  }
+
   OnigErrorInfo einfo;
   OnigRegex reg;
   int result = onig_new(&reg, (OnigUChar*)RSTRING_PTR(str), (OnigUChar*) RSTRING_PTR(str) + RSTRING_LEN(str),
-                        cflag, ONIG_ENCODING_UTF8, syntax, &einfo);
+                        cflag, enc, syntax, &einfo);
   if (result != ONIG_NORMAL) {
     char err[ONIG_MAX_ERROR_MESSAGE_LEN] = "";
     onig_error_code_to_str((OnigUChar*)err, result);

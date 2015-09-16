@@ -30,6 +30,10 @@ assert('OnigRegexp#initialize', '15.2.15.7.1') do
   OnigRegexp.new(".*") and OnigRegexp.new(".*", OnigRegexp::MULTILINE)
 end
 
+assert('OnigRegexp#initialize (code)') do
+  OnigRegexp.new(".*", nil, "n")
+end
+
 assert('OnigRegexp#initialize_copy', '15.2.15.7.2') do
   r1 = OnigRegexp.new(".*")
   r2 = r1.dup
